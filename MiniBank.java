@@ -153,7 +153,6 @@ public class MiniBank {
         // ==========================================================
         System.out.println("\n>>> PRACTICAL 6: Custom Annotations & Reflection <<<");
 
-        // Create an account violating @Positive (negative balance) and @MaxLength (name > 10 chars)
         Account invalidAccount = new SavingsAccount("DishaVeryLongOwnerName", -1500, 1000);
         System.out.println("\nValidating object with custom annotations via reflection:");
         System.out.println("Object: " + invalidAccount);
@@ -168,7 +167,6 @@ public class MiniBank {
             }
         }
 
-        // Valid account reflection check
         Account validAccount = new SavingsAccount("Disha", 5000, 1000);
         String[] validErrors = AnnotationValidator.validate(validAccount);
         System.out.println("Validating correctly configured account (" + validAccount.getOwnerName() + "):");
@@ -182,7 +180,6 @@ public class MiniBank {
         Account testSavings = new SavingsAccount("Disha", 5000, 1000);
         Account testCurrent = new CurrentAccount("Yashashvi", 2000, 3000);
 
-        // 1. Successful Deposit
         System.out.println("\n[1] Testing Successful Deposit:");
         try {
             testSavings.deposit(1500);
@@ -191,7 +188,6 @@ public class MiniBank {
             System.out.println("  Deposit failed: " + e.getMessage());
         }
 
-        // 2. Invalid Deposit Amount
         System.out.println("\n[2] Testing Invalid Deposit Amount (<= 0):");
         try {
             testSavings.deposit(-200);
@@ -199,7 +195,6 @@ public class MiniBank {
             System.out.println("  Caught expected exception: " + e.getClass().getSimpleName() + " -> " + e.getMessage());
         }
 
-        // 3. Successful Withdrawal
         System.out.println("\n[3] Testing Successful Withdrawal:");
         try {
             testSavings.withdraw(2000);
@@ -208,10 +203,8 @@ public class MiniBank {
             System.out.println("  Withdrawal failed: " + e.getMessage());
         }
 
-        // 4. Insufficient Funds Withdrawal with Shortfall Reporting
         System.out.println("\n[4] Testing Insufficient Funds Withdrawal (Violating Min Balance):");
         try {
-            // Balance is 4500, minBalance is 1000 -> max allowed is 3500. Attempting 4000.
             testSavings.withdraw(4000);
         } catch (InsufficientFundsException e) {
             System.out.println("  Caught expected exception: " + e.getClass().getSimpleName());
@@ -222,7 +215,6 @@ public class MiniBank {
             System.out.println("  Invalid amount: " + e.getMessage());
         }
 
-        // 5. Invalid Withdrawal Amount
         System.out.println("\n[5] Testing Invalid Withdrawal Amount (<= 0):");
         try {
             testSavings.withdraw(0);
@@ -232,7 +224,6 @@ public class MiniBank {
             System.out.println("  Insufficient funds: " + e.getMessage());
         }
 
-        // 6. Fund Transfer: Successful Transfer
         System.out.println("\n[6] Testing Successful Fund Transfer:");
         try {
             System.out.println("  Before Transfer:");
@@ -249,10 +240,8 @@ public class MiniBank {
             System.out.println("  Transfer error: " + e.getMessage());
         }
 
-        // 7. Fund Transfer: Failed Transfer (Source Insufficient Funds with Rollback Verification)
         System.out.println("\n[7] Testing Failed Transfer (Insufficient Funds):");
         try {
-            // Source has balance 3500, min 1000. Attempting to transfer 5000.
             testSavings.transfer(testCurrent, 5000);
         } catch (BankException e) {
             System.out.println("  Caught expected exception: " + e.getClass().getSimpleName() + " -> " + e.getMessage());
@@ -262,13 +251,287 @@ public class MiniBank {
             System.out.println("  [finally block] Transfer attempt transaction audit recorded.");
         }
 
-        // 8. Try-With-Resources Demonstration
         System.out.println("\n[8] Try-With-Resources Demonstration with AutoCloseable:");
         try (BankingSession session = new BankingSession("Audit-Session-2026")) {
             session.performAudit();
         } catch (Exception e) {
             System.out.println("  Session error: " + e.getMessage());
         }
+
+        // ==========================================================
+        // PRACTICAL 8: Multithreading and Synchronization
+        // ==========================================================
+        System.out.println("\n>>> PRACTICAL 8: Multithreading & Synchronization <<<");
+
+        // 1. Unsafe deposit demonstration (Illustrating Race Condition)
+        System.out.println("\n[1] Unsafe Deposit Demonstration (Demonstrating Race Condition):");
+        Account raceAccount = new SavingsAccount("RaceDemo", 0, 0);
+        int raceThreadsCount = 10;
+        int raceDepositsPerThread = 50;
+        long raceAmountPerDeposit = 10;
+        long raceExpectedBalance = raceThreadsCount * raceDepositsPerThread * raceAmountPerDeposit;
+
+        Thread[] raceThreads = new Thread[raceThreadsCount];
+        for (int i = 0; i < raceThreadsCount; i++) {
+            raceThreads[i] = new Thread(
+                    new AccountWorker(raceAccount, raceDepositsPerThread, raceAmountPerDeposit, true),
+                    "UnsafeWorker-" + (i + 1));
+            raceThreads[i].start();
+        }
+
+        for (Thread t : raceThreads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                System.out.println("Thread interrupted: " + e.getMessage());
+            }
+        }
+
+        System.out.println("  Unsafe Deposit Test Results:");
+        System.out.println("    Expected Balance : Rs. " + raceExpectedBalance);
+        System.out.println("    Actual Balance   : Rs. " + raceAccount.getBalance());
+        if (raceAccount.getBalance() != raceExpectedBalance) {
+            System.out.println("    Observation      : RACE CONDITION OCCURRED! Lost updates due to unsynchronized access.");
+        } else {
+            System.out.println("    Observation      : Race condition did not manifest in this run (timing dependent).");
+        }
+
+        // 2. Thread-safe synchronized deposit verification
+        System.out.println("\n[2] Thread-Safe Synchronized Deposit Test (Verification):");
+        Account syncAccount = new SavingsAccount("SyncDemo", 0, 0);
+        int syncThreadsCount = 10;
+        int syncDepositsPerThread = 1000;
+        long syncAmountPerDeposit = 10;
+        long syncExpectedBalance = (long) syncThreadsCount * syncDepositsPerThread * syncAmountPerDeposit; // 100,000
+
+        Thread[] syncThreads = new Thread[syncThreadsCount];
+        for (int i = 0; i < syncThreadsCount; i++) {
+            syncThreads[i] = new Thread(
+                    new AccountWorker(syncAccount, syncDepositsPerThread, syncAmountPerDeposit, false),
+                    "SyncWorker-" + (i + 1));
+            syncThreads[i].start();
+        }
+
+        for (Thread t : syncThreads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                System.out.println("Thread interrupted: " + e.getMessage());
+            }
+        }
+
+        System.out.println("\n  Synchronized Test Results:");
+        System.out.println("    Initial Balance  : Rs. 0");
+        System.out.println("    Threads Count    : " + syncThreadsCount);
+        System.out.println("    Deposits/Thread  : " + syncDepositsPerThread);
+        System.out.println("    Deposit Amount   : Rs. " + syncAmountPerDeposit);
+        System.out.println("    Expected Balance : Rs. " + syncExpectedBalance);
+        System.out.println("    Actual Balance   : Rs. " + syncAccount.getBalance());
+        System.out.println("    Test Status      : "
+                + (syncAccount.getBalance() == syncExpectedBalance ? "PASSED (Thread-Safe)" : "FAILED"));
+
+        // ==========================================================
+        // PRACTICAL 9: Thread Pools, Producer-Consumer & Deadlock
+        // ==========================================================
+        System.out.println("\n>>> PRACTICAL 9: Thread Pools, Producer-Consumer & Deadlock <<<");
+
+        // 1. Thread Pool using TransactionProcessor
+        System.out.println("\n[1] Thread Pool Execution with TransactionProcessor:");
+        Account poolAccount = new SavingsAccount("PoolAcc", 5000, 500);
+        TransactionProcessor processor = new TransactionProcessor();
+
+        // Submit multiple deposit and withdrawal tasks
+        processor.submit(() -> {
+            try {
+                poolAccount.deposit(1000);
+                System.out.println("  [PoolTask] Deposited Rs. 1000. Balance: Rs. " + poolAccount.getBalance());
+            } catch (InvalidAmountException e) {
+                System.out.println("  [PoolTask] Deposit failed: " + e.getMessage());
+            }
+        });
+
+        processor.submit(() -> {
+            try {
+                poolAccount.withdraw(1500);
+                System.out.println("  [PoolTask] Withdrawn Rs. 1500. Balance: Rs. " + poolAccount.getBalance());
+            } catch (BankException e) {
+                System.out.println("  [PoolTask] Withdrawal failed: " + e.getMessage());
+            }
+        });
+
+        processor.submit(() -> {
+            try {
+                poolAccount.deposit(2500);
+                System.out.println("  [PoolTask] Deposited Rs. 2500. Balance: Rs. " + poolAccount.getBalance());
+            } catch (InvalidAmountException e) {
+                System.out.println("  [PoolTask] Deposit failed: " + e.getMessage());
+            }
+        });
+
+        processor.submit(() -> {
+            try {
+                poolAccount.withdraw(500);
+                System.out.println("  [PoolTask] Withdrawn Rs. 500. Balance: Rs. " + poolAccount.getBalance());
+            } catch (BankException e) {
+                System.out.println("  [PoolTask] Withdrawal failed: " + e.getMessage());
+            }
+        });
+
+        processor.stop();
+        System.out.println("  ExecutorService shutdown cleanly. Final Pool Account Balance: Rs. " + poolAccount.getBalance());
+
+        // 2. Producer-Consumer Pattern using wait() & notify()
+        System.out.println("\n[2] Producer-Consumer Pattern using wait() and notify():");
+        TransactionBuffer buffer = new TransactionBuffer(3);
+        Account bufferAccount = new SavingsAccount("BufferAcc", 2000, 100);
+
+        Thread producerThread = new Thread(() -> {
+            Command[] transactions = {
+                new Command(TransactionType.DEPOSIT, "AC0001", 500),
+                new Command(TransactionType.DEPOSIT, "AC0001", 300),
+                new Command(TransactionType.WITHDRAW, "AC0001", 400),
+                new Command(TransactionType.DEPOSIT, "AC0001", 1000),
+                new Command(TransactionType.WITHDRAW, "AC0001", 200)
+            };
+
+            for (Command cmd : transactions) {
+                try {
+                    buffer.produce(cmd);
+                    System.out.println("  [Producer] Produced: " + cmd.type() + " Rs. " + cmd.amount());
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            buffer.finish();
+            System.out.println("  [Producer] Finished producing all transactions.");
+        }, "Producer-Thread");
+
+        Thread consumerThread = new Thread(() -> {
+            while (true) {
+                try {
+                    Command cmd = buffer.consume();
+                    if (cmd == null) {
+                        break; // Buffer is empty and producer finished
+                    }
+
+                    if (cmd.type() == TransactionType.DEPOSIT) {
+                        bufferAccount.deposit(cmd.amount());
+                    } else if (cmd.type() == TransactionType.WITHDRAW) {
+                        bufferAccount.withdraw(cmd.amount());
+                    }
+
+                    System.out.println("  [Consumer] Processed: " + cmd.type() + " Rs. " + cmd.amount()
+                            + " | New Balance: Rs. " + bufferAccount.getBalance());
+                    Thread.sleep(80);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (BankException e) {
+                    System.out.println("  [Consumer] Transaction error: " + e.getMessage());
+                }
+            }
+            System.out.println("  [Consumer] Processed all transactions and terminated.");
+        }, "Consumer-Thread");
+
+        producerThread.start();
+        consumerThread.start();
+
+        try {
+            producerThread.join();
+            consumerThread.join();
+        } catch (InterruptedException e) {
+            System.out.println("Thread interrupted: " + e.getMessage());
+        }
+
+        System.out.println("  Final Buffer Account Balance: Rs. " + bufferAccount.getBalance());
+
+        // 3. Deadlock Demonstration & Safe Ordered Lock Transfer
+        System.out.println("\n[3] Deadlock Demonstration & Safe Ordered-Lock Transfer:");
+        Account deadA = new SavingsAccount("AC9001", "DemoA", 1000, 0);
+        Account deadB = new SavingsAccount("AC9002", "DemoB", 1000, 0);
+
+        System.out.println("  Demonstrating Potential Deadlock Scenario (Locking in Opposite Order):");
+        Thread deadlockThread1 = new Thread(() -> {
+            synchronized (deadA) {
+                System.out.println("    [Deadlock-T1] Acquired lock on Account A (" + deadA.getAccountNumber() + "). Waiting for B...");
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException ignored) {}
+                synchronized (deadB) {
+                    System.out.println("    [Deadlock-T1] Acquired lock on Account B.");
+                }
+            }
+        }, "DeadlockThread-1");
+
+        Thread deadlockThread2 = new Thread(() -> {
+            synchronized (deadB) {
+                System.out.println("    [Deadlock-T2] Acquired lock on Account B (" + deadB.getAccountNumber() + "). Waiting for A...");
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException ignored) {}
+                synchronized (deadA) {
+                    System.out.println("    [Deadlock-T2] Acquired lock on Account A.");
+                }
+            }
+        }, "DeadlockThread-2");
+
+        deadlockThread1.setDaemon(true);
+        deadlockThread2.setDaemon(true);
+        deadlockThread1.start();
+        deadlockThread2.start();
+
+        try {
+            deadlockThread1.join(300);
+            deadlockThread2.join(300);
+        } catch (InterruptedException ignored) {}
+
+        if (deadlockThread1.isAlive() && deadlockThread2.isAlive()) {
+            System.out.println("    -> DEADLOCK DETECTED! Thread-1 holds A waiting for B; Thread-2 holds B waiting for A.");
+            System.out.println("    -> Circular wait condition confirmed (Threads are daemon and safely contained).");
+        }
+
+        System.out.println("\n  Applying Consistent Lock-Ordering Solution (Safe Transfer):");
+        Account accountA = new SavingsAccount("AC0001", "Alice", 5000, 0);
+        Account accountB = new SavingsAccount("AC0002", "Bob", 5000, 0);
+
+        System.out.println("  Initial Balances: Alice (AC0001) = Rs. " + accountA.getBalance()
+                + " | Bob (AC0002) = Rs. " + accountB.getBalance());
+        System.out.println("  Total System Money: Rs. " + (accountA.getBalance() + accountB.getBalance()));
+
+        Thread safeThread1 = new Thread(() -> {
+            try {
+                accountA.safeTransfer(accountB, 1000);
+                System.out.println("    [SafeTransfer-1] Transferred Rs. 1000 from Alice to Bob.");
+            } catch (BankException e) {
+                System.out.println("    [SafeTransfer-1] Error: " + e.getMessage());
+            }
+        }, "SafeTransfer-1");
+
+        Thread safeThread2 = new Thread(() -> {
+            try {
+                accountB.safeTransfer(accountA, 1000);
+                System.out.println("    [SafeTransfer-2] Transferred Rs. 1000 from Bob to Alice.");
+            } catch (BankException e) {
+                System.out.println("    [SafeTransfer-2] Error: " + e.getMessage());
+            }
+        }, "SafeTransfer-2");
+
+        safeThread1.start();
+        safeThread2.start();
+
+        try {
+            safeThread1.join();
+            safeThread2.join();
+        } catch (InterruptedException e) {
+            System.out.println("Safe transfer interrupted: " + e.getMessage());
+        }
+
+        System.out.println("  Final Balances: Alice = Rs. " + accountA.getBalance()
+                + " | Bob = Rs. " + accountB.getBalance());
+        System.out.println("  Total System Money Preserved: Rs. " + (accountA.getBalance() + accountB.getBalance())
+                + " (No deadlock occurred, locks acquired in consistent order)");
 
         // ==========================================================
         // Interactive Banking Menu (Preserved from Practical 1 & 2)

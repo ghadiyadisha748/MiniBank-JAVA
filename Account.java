@@ -77,8 +77,18 @@ public abstract class Account implements Transactable {
         this.active = true;
     }
 
+    // Unsynchronized deposit used specifically to demonstrate race conditions
+    public void unsafeDeposit(long amount) {
+        long current = this.balance;
+        try {
+            Thread.sleep(0, 50);
+        } catch (InterruptedException ignored) {
+        }
+        this.balance = current + amount;
+    }
+
     @Override
-    public void deposit(long amount) throws InvalidAmountException {
+    public synchronized void deposit(long amount) throws InvalidAmountException {
         if (amount <= 0) {
             throw new InvalidAmountException("Deposit amount must be positive: " + amount);
         }
@@ -86,7 +96,7 @@ public abstract class Account implements Transactable {
     }
 
     @Override
-    public boolean withdraw(long amount) throws InsufficientFundsException, InvalidAmountException {
+    public synchronized boolean withdraw(long amount) throws InsufficientFundsException, InvalidAmountException {
         if (amount <= 0) {
             throw new InvalidAmountException("Withdrawal amount must be positive: " + amount);
         }
@@ -127,6 +137,37 @@ public abstract class Account implements Transactable {
         }
     }
 
+    // Thread-safe transfer using consistent account-number lock ordering to prevent deadlocks
+    public void safeTransfer(Account to, long amount) throws BankException {
+        if (to == null) {
+            throw new AccountNotFoundException("Destination account not found (null).");
+        }
+
+        if (this.equals(to)) {
+            throw new InvalidAmountException("Cannot transfer to the same account.");
+        }
+
+        if (amount <= 0) {
+            throw new InvalidAmountException("Transfer amount must be positive: " + amount);
+        }
+
+        // Lock ordering: always lock smaller account number first
+        Account firstLock = this.accountno.compareTo(to.accountno) < 0 ? this : to;
+        Account secondLock = (firstLock == this) ? to : this;
+
+        synchronized (firstLock) {
+            synchronized (secondLock) {
+                this.withdraw(amount);
+                try {
+                    to.deposit(amount);
+                } catch (InvalidAmountException e) {
+                    this.balance = this.balance + amount;
+                    throw new BankException("Transfer failed during deposit. Source balance restored.", e);
+                }
+            }
+        }
+    }
+
     public String getAccountNumber() {
         return accountno;
     }
@@ -135,7 +176,7 @@ public abstract class Account implements Transactable {
         return ownername;
     }
 
-    public long getBalance() {
+    public synchronized long getBalance() {
         return balance;
     }
 
