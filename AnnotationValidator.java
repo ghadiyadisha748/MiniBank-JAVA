@@ -12,7 +12,6 @@ public class AnnotationValidator {
         List<String> errors = new ArrayList<>();
         Class<?> currentClass = obj.getClass();
 
-        // Inspect fields of this class and superclasses (excluding Object)
         while (currentClass != null && currentClass != Object.class) {
             Field[] fields = currentClass.getDeclaredFields();
 
@@ -22,7 +21,6 @@ public class AnnotationValidator {
                 try {
                     Object value = field.get(obj);
 
-                    // 1. Check @Positive annotation
                     if (field.isAnnotationPresent(Positive.class)) {
                         Positive positive = field.getAnnotation(Positive.class);
 
@@ -36,7 +34,6 @@ public class AnnotationValidator {
                         }
                     }
 
-                    // 2. Check @MaxLength annotation
                     if (field.isAnnotationPresent(MaxLength.class)) {
                         MaxLength maxLength = field.getAnnotation(MaxLength.class);
 

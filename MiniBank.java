@@ -9,7 +9,6 @@ public class MiniBank {
         OPEN_ACCOUNT, DEPOSIT, WITHDRAW, TRANSFER, EXIT
     }
 
-    // Custom AutoCloseable resource for try-with-resources demonstration (Practical 7)
     static class BankingSession implements AutoCloseable {
         private String sessionName;
 
@@ -36,9 +35,6 @@ public class MiniBank {
         System.out.println("        MINIBANK — OBJECT ORIENTED PROGRAMMING PRACTICALS       ");
         System.out.println("================================================================");
 
-        // ==========================================================
-        // PRACTICAL 3: Validation, Command Parsing & Statement Formatting
-        // ==========================================================
         System.out.println("\n>>> PRACTICAL 3: Validation, Command Parsing & Statement <<<");
 
         System.out.println("\n[1] Validator Tests:");
@@ -71,9 +67,6 @@ public class MiniBank {
         System.out.print("  Invalid amt  : ");
         CommandParser.parse("WITHDRAW AC0001 -100");
 
-        // ==========================================================
-        // PRACTICAL 4: Abstract Classes, Inheritance & Polymorphism
-        // ==========================================================
         System.out.println("\n>>> PRACTICAL 4: Abstract Classes, Inheritance & Polymorphism <<<");
 
         Account[] accounts = new Account[3];
@@ -103,13 +96,9 @@ public class MiniBank {
             }
         }
 
-        // StatementFormatter from Practical 3 tested with Account from Practical 4
         System.out.println("\n[3] StatementFormatter buildStatement():");
         System.out.println(StatementFormatter.buildStatement(accounts[0]));
 
-        // ==========================================================
-        // PRACTICAL 5: Interfaces, Functional Interface & Marker Interface
-        // ==========================================================
         System.out.println("\n>>> PRACTICAL 5: Interfaces, Functional Interface & Marker Interface <<<");
 
         System.out.println("\n[1] InterestBearing Default Method (yearlyInterest):");
@@ -148,9 +137,6 @@ public class MiniBank {
             }
         }
 
-        // ==========================================================
-        // PRACTICAL 6: Custom Annotations & Reflection
-        // ==========================================================
         System.out.println("\n>>> PRACTICAL 6: Custom Annotations & Reflection <<<");
 
         Account invalidAccount = new SavingsAccount("DishaVeryLongOwnerName", -1500, 1000);
@@ -172,9 +158,6 @@ public class MiniBank {
         System.out.println("Validating correctly configured account (" + validAccount.getOwnerName() + "):");
         System.out.println("  Errors count: " + validErrors.length + " (Passed all checks)");
 
-        // ==========================================================
-        // PRACTICAL 7: Custom Exceptions & Fault-Tolerant MiniBank
-        // ==========================================================
         System.out.println("\n>>> PRACTICAL 7: Custom Exceptions & Fault Tolerance <<<");
 
         Account testSavings = new SavingsAccount("Disha", 5000, 1000);
@@ -258,12 +241,8 @@ public class MiniBank {
             System.out.println("  Session error: " + e.getMessage());
         }
 
-        // ==========================================================
-        // PRACTICAL 8: Multithreading and Synchronization
-        // ==========================================================
         System.out.println("\n>>> PRACTICAL 8: Multithreading & Synchronization <<<");
 
-        // 1. Unsafe deposit demonstration (Illustrating Race Condition)
         System.out.println("\n[1] Unsafe Deposit Demonstration (Demonstrating Race Condition):");
         Account raceAccount = new SavingsAccount("RaceDemo", 0, 0);
         int raceThreadsCount = 10;
@@ -296,13 +275,12 @@ public class MiniBank {
             System.out.println("    Observation      : Race condition did not manifest in this run (timing dependent).");
         }
 
-        // 2. Thread-safe synchronized deposit verification
         System.out.println("\n[2] Thread-Safe Synchronized Deposit Test (Verification):");
         Account syncAccount = new SavingsAccount("SyncDemo", 0, 0);
         int syncThreadsCount = 10;
         int syncDepositsPerThread = 1000;
         long syncAmountPerDeposit = 10;
-        long syncExpectedBalance = (long) syncThreadsCount * syncDepositsPerThread * syncAmountPerDeposit; // 100,000
+        long syncExpectedBalance = (long) syncThreadsCount * syncDepositsPerThread * syncAmountPerDeposit;
 
         Thread[] syncThreads = new Thread[syncThreadsCount];
         for (int i = 0; i < syncThreadsCount; i++) {
@@ -330,17 +308,12 @@ public class MiniBank {
         System.out.println("    Test Status      : "
                 + (syncAccount.getBalance() == syncExpectedBalance ? "PASSED (Thread-Safe)" : "FAILED"));
 
-        // ==========================================================
-        // PRACTICAL 9: Thread Pools, Producer-Consumer & Deadlock
-        // ==========================================================
         System.out.println("\n>>> PRACTICAL 9: Thread Pools, Producer-Consumer & Deadlock <<<");
 
-        // 1. Thread Pool using TransactionProcessor
         System.out.println("\n[1] Thread Pool Execution with TransactionProcessor:");
         Account poolAccount = new SavingsAccount("PoolAcc", 5000, 500);
         TransactionProcessor processor = new TransactionProcessor();
 
-        // Submit multiple deposit and withdrawal tasks
         processor.submit(() -> {
             try {
                 poolAccount.deposit(1000);
@@ -380,7 +353,6 @@ public class MiniBank {
         processor.stop();
         System.out.println("  ExecutorService shutdown cleanly. Final Pool Account Balance: Rs. " + poolAccount.getBalance());
 
-        // 2. Producer-Consumer Pattern using wait() & notify()
         System.out.println("\n[2] Producer-Consumer Pattern using wait() and notify():");
         TransactionBuffer buffer = new TransactionBuffer(3);
         Account bufferAccount = new SavingsAccount("BufferAcc", 2000, 100);
@@ -413,7 +385,7 @@ public class MiniBank {
                 try {
                     Command cmd = buffer.consume();
                     if (cmd == null) {
-                        break; // Buffer is empty and producer finished
+                        break;
                     }
 
                     if (cmd.type() == TransactionType.DEPOSIT) {
@@ -447,7 +419,6 @@ public class MiniBank {
 
         System.out.println("  Final Buffer Account Balance: Rs. " + bufferAccount.getBalance());
 
-        // 3. Deadlock Demonstration & Safe Ordered Lock Transfer
         System.out.println("\n[3] Deadlock Demonstration & Safe Ordered-Lock Transfer:");
         Account deadA = new SavingsAccount("AC9001", "DemoA", 1000, 0);
         Account deadB = new SavingsAccount("AC9002", "DemoB", 1000, 0);
@@ -533,9 +504,6 @@ public class MiniBank {
         System.out.println("  Total System Money Preserved: Rs. " + (accountA.getBalance() + accountB.getBalance())
                 + " (No deadlock occurred, locks acquired in consistent order)");
 
-        // ==========================================================
-        // Interactive Banking Menu (Preserved from Practical 1 & 2)
-        // ==========================================================
         bankinfo bank = new bankinfo("MiniBank", "Sarthana Branch");
         boolean running = true;
 

@@ -77,7 +77,6 @@ public abstract class Account implements Transactable {
         this.active = true;
     }
 
-    // Unsynchronized deposit used specifically to demonstrate race conditions
     public void unsafeDeposit(long amount) {
         long current = this.balance;
         try {
@@ -123,21 +122,17 @@ public abstract class Account implements Transactable {
             throw new InvalidAmountException("Transfer amount must be positive: " + amount);
         }
 
-        // Withdraw from source account (may throw InsufficientFundsException)
         this.withdraw(amount);
 
         try {
             to.deposit(amount);
         } catch (InvalidAmountException e) {
-            // Rollback source account withdrawal if destination deposit fails
             this.balance = this.balance + amount;
             throw new BankException("Transfer failed during deposit. Source balance restored.", e);
         } finally {
-            // Logging or cleanup block
         }
     }
 
-    // Thread-safe transfer using consistent account-number lock ordering to prevent deadlocks
     public void safeTransfer(Account to, long amount) throws BankException {
         if (to == null) {
             throw new AccountNotFoundException("Destination account not found (null).");
@@ -151,7 +146,6 @@ public abstract class Account implements Transactable {
             throw new InvalidAmountException("Transfer amount must be positive: " + amount);
         }
 
-        // Lock ordering: always lock smaller account number first
         Account firstLock = this.accountno.compareTo(to.accountno) < 0 ? this : to;
         Account secondLock = (firstLock == this) ? to : this;
 
