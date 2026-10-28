@@ -1,3 +1,5 @@
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Scanner;
 
 public class MiniBank {
@@ -503,6 +505,55 @@ public class MiniBank {
                 + " | Bob = Rs. " + accountB.getBalance());
         System.out.println("  Total System Money Preserved: Rs. " + (accountA.getBalance() + accountB.getBalance())
                 + " (No deadlock occurred, locks acquired in consistent order)");
+
+        System.out.println("\n>>> PRACTICAL 11: Persistence and Reporting <<<");
+
+        System.out.println("\n[1] Creating accounts for serialization:");
+        Account p11acc0 = new SavingsAccount("Riya", 8000, 1000);
+        Account p11acc1 = new CurrentAccount("Arjun", 15000, 5000);
+        Account p11acc2 = new FixedDepositAccount("Meera", 30000);
+        Account[] p11accounts = { p11acc0, p11acc1, p11acc2 };
+        for (Account acc : p11accounts) {
+            System.out.println("  " + acc);
+        }
+
+        Path dataDir = Paths.get("data");
+        Path stateFile = dataDir.resolve("accounts.dat");
+
+        System.out.println("\n[2] Saving accounts to: " + stateFile);
+        StatePersister.save(p11accounts, stateFile);
+        System.out.println("  Accounts saved successfully.");
+
+        System.out.println("\n[3] Reloading accounts from: " + stateFile);
+        Account[] reloaded = StatePersister.load(stateFile);
+        System.out.println("  Reloaded " + reloaded.length + " account(s):");
+        for (Account acc : reloaded) {
+            System.out.println("  " + acc.getAccountNumber() + " | " + acc.getOwnerName() + " | Rs. " + acc.getBalance());
+        }
+
+        System.out.println("\n[4] Appending transactions to log:");
+        Path logsDir = Paths.get("data", "logs");
+        Path logFile = logsDir.resolve("transactions.log");
+        String[] logEntries = {
+            reloaded[0].getAccountNumber() + ",DEPOSIT,5000",
+            reloaded[0].getAccountNumber() + ",WITHDRAW,2000",
+            reloaded[1].getAccountNumber() + ",DEPOSIT,10000",
+            reloaded[1].getAccountNumber() + ",WITHDRAW,3000",
+            reloaded[2].getAccountNumber() + ",DEPOSIT,20000"
+        };
+        for (String entry : logEntries) {
+            TransactionLog.append(logFile, entry);
+            System.out.println("  Logged: " + entry);
+        }
+        System.out.println("  Appending again to verify non-overwrite:");
+        TransactionLog.append(logFile, reloaded[0].getAccountNumber() + ",DEPOSIT,1000");
+        System.out.println("  Appended extra entry: " + reloaded[0].getAccountNumber() + ",DEPOSIT,1000");
+
+        System.out.println("\n[5] Generating end-of-day report:");
+        Path reportFile = Paths.get("data", "report", "eod-report.txt");
+        String reportContent = ReportGenerator.generate(logsDir, reportFile);
+        System.out.println(reportContent);
+        System.out.println("  Report written to: " + reportFile.toAbsolutePath());
 
         bankinfo bank = new bankinfo("MiniBank", "Sarthana Branch");
         boolean running = true;

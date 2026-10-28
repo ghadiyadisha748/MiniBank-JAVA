@@ -1,4 +1,8 @@
-public abstract class Account implements Transactable {
+import java.io.Serializable;
+
+public abstract class Account implements Transactable, Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Id
     private final String accountno;

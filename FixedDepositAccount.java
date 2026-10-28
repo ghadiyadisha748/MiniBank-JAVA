@@ -1,5 +1,7 @@
 public class FixedDepositAccount extends Account implements InterestBearing, Premium {
 
+    private static final long serialVersionUID = 1L;
+
     public FixedDepositAccount(String ownername, long balance) {
         super(ownername, balance);
     }

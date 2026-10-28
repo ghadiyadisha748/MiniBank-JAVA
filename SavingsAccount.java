@@ -1,5 +1,7 @@
 public class SavingsAccount extends Account implements InterestBearing {
 
+    private static final long serialVersionUID = 1L;
+
     private long minBalance;
 
     public SavingsAccount(String ownername, long balance, long minBalance) {
