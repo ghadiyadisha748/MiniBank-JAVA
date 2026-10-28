@@ -698,36 +698,185 @@ public class MiniBank {
             System.out.println("  Caught expected error: " + e.getMessage());
         }
 
+        System.out.println("\n>>> PRACTICAL 14: Final MiniBank Capstone <<<");
+
+        Path p14StateFile = Paths.get("data", "accounts.dat");
+        Path p14LogFile = Paths.get("data", "logs", "transactions.log");
+        Path p14ReportFile = Paths.get("data", "report", "eod-report.txt");
+
+        Repository<Account> capstoneRepo = new Repository<>();
+
+        System.out.println("\n[Startup] Loading saved accounts from: " + p14StateFile);
+        Account[] savedAccounts = StatePersister.load(p14StateFile);
+        if (savedAccounts.length == 0) {
+            System.out.println("  No saved accounts found. Starting fresh.");
+        } else {
+            for (Account a : savedAccounts) {
+                capstoneRepo.save(a);
+            }
+            System.out.println("  Loaded " + savedAccounts.length + " account(s) from state file.");
+        }
+
+        BankService bankService = new BankService(capstoneRepo, p14LogFile);
+
         bankinfo bank = new bankinfo("MiniBank", "Sarthana Branch");
         boolean running = true;
 
-
         while (running) {
-            System.out.println("\n==============================");
-            System.out.println(bank.name() + " - " + bank.branch());
-            System.out.println("==============================");
-            System.out.println("1.Open Account");
-            System.out.println("2.Deposit");
-            System.out.println("3.Withdraw");
-            System.out.println("4.Transfer");
-            System.out.println("5.Exit");
+            System.out.println("\n================================================================");
+            System.out.println("  " + bank.name() + " - " + bank.branch());
+            System.out.println("================================================================");
+            System.out.println("  1. Open Account");
+            System.out.println("  2. Deposit");
+            System.out.println("  3. Withdraw");
+            System.out.println("  4. Transfer");
+            System.out.println("  5. View Account Statement");
+            System.out.println("  6. List All Accounts");
+            System.out.println("  7. Generate End-of-Day Report");
+            System.out.println("  8. Batch Process Transactions");
+            System.out.println("  9. Save Accounts");
+            System.out.println(" 10. Search by Owner Name");
+            System.out.println("  0. Exit");
             System.out.print("Enter your choice: ");
 
             if (!sc.hasNextInt()) {
-                break;
+                sc.next();
+                System.out.println("  Invalid input. Please enter a number.");
+                continue;
             }
             int choice = sc.nextInt();
+            sc.nextLine();
 
             switch (choice) {
-                case 1 -> System.out.println("open account");
-                case 2 -> System.out.println("deposit");
-                case 3 -> System.out.println("withdraw");
-                case 4 -> System.out.println("transfer");
+                case 1 -> {
+                    System.out.println("\n  Account Types: SAVINGS | CURRENT | FIXED");
+                    System.out.print("  Type: ");
+                    String type = sc.nextLine().trim();
+                    System.out.print("  Owner Name: ");
+                    String owner = sc.nextLine().trim();
+                    System.out.print("  Opening Balance (Rs.): ");
+                    long bal = 0;
+                    if (sc.hasNextLong()) { bal = sc.nextLong(); sc.nextLine(); }
+                    long extra = 0;
+                    if (type.equalsIgnoreCase("SAVINGS")) {
+                        System.out.print("  Minimum Balance (Rs.): ");
+                        if (sc.hasNextLong()) { extra = sc.nextLong(); sc.nextLine(); }
+                    } else if (type.equalsIgnoreCase("CURRENT")) {
+                        System.out.print("  Overdraft Limit (Rs.): ");
+                        if (sc.hasNextLong()) { extra = sc.nextLong(); sc.nextLine(); }
+                    }
+                    try {
+                        Account newAcc = bankService.openAccount(type, owner, bal, extra);
+                        System.out.println("  Account opened: " + newAcc.getAccountNumber() + " | " + newAcc.getOwnerName());
+                    } catch (BankException e) {
+                        System.out.println("  Error: " + e.getMessage());
+                    }
+                }
+                case 2 -> {
+                    System.out.print("  Account Number: ");
+                    String accNo = sc.nextLine().trim();
+                    System.out.print("  Amount (Rs.): ");
+                    long amt = 0;
+                    if (sc.hasNextLong()) { amt = sc.nextLong(); sc.nextLine(); }
+                    try {
+                        bankService.deposit(accNo, amt);
+                        System.out.println("  Deposit successful.");
+                    } catch (BankException e) {
+                        System.out.println("  Error: " + e.getMessage());
+                    }
+                }
+                case 3 -> {
+                    System.out.print("  Account Number: ");
+                    String accNo = sc.nextLine().trim();
+                    System.out.print("  Amount (Rs.): ");
+                    long amt = 0;
+                    if (sc.hasNextLong()) { amt = sc.nextLong(); sc.nextLine(); }
+                    try {
+                        bankService.withdraw(accNo, amt);
+                        System.out.println("  Withdrawal successful.");
+                    } catch (BankException e) {
+                        System.out.println("  Error: " + e.getMessage());
+                    }
+                }
+                case 4 -> {
+                    System.out.print("  From Account Number: ");
+                    String from = sc.nextLine().trim();
+                    System.out.print("  To Account Number: ");
+                    String to = sc.nextLine().trim();
+                    System.out.print("  Amount (Rs.): ");
+                    long amt = 0;
+                    if (sc.hasNextLong()) { amt = sc.nextLong(); sc.nextLine(); }
+                    try {
+                        bankService.transfer(from, to, amt);
+                        System.out.println("  Transfer successful.");
+                    } catch (BankException e) {
+                        System.out.println("  Error: " + e.getMessage());
+                    }
+                }
                 case 5 -> {
-                    System.out.println("Exit");
+                    System.out.print("  Account Number: ");
+                    String accNo = sc.nextLine().trim();
+                    try {
+                        System.out.println(bankService.statement(accNo));
+                    } catch (BankException e) {
+                        System.out.println("  Error: " + e.getMessage());
+                    }
+                }
+                case 6 -> {
+                    ArrayList<Account> all = bankService.listAccounts();
+                    if (all.isEmpty()) {
+                        System.out.println("  No accounts found.");
+                    } else {
+                        System.out.println("  All Accounts (" + all.size() + "):");
+                        for (Account a : all) {
+                            System.out.println("  " + a.getAccountNumber() + " | " + a.getOwnerName() + " | Rs. " + a.getBalance() + " | " + a.getClass().getSimpleName());
+                        }
+                    }
+                }
+                case 7 -> {
+                    System.out.println("  Generating end-of-day report...");
+                    String report = ReportGenerator.generate(Paths.get("data", "logs"), p14ReportFile);
+                    System.out.println(report);
+                    System.out.println("  Report saved to: " + p14ReportFile.toAbsolutePath());
+                }
+                case 8 -> {
+                    ArrayList<Account> batchList = bankService.listAccounts();
+                    if (batchList.isEmpty()) {
+                        System.out.println("  No accounts available for batch processing.");
+                    } else {
+                        Account batchAcc = batchList.get(0);
+                        System.out.println("  Running batch on: " + batchAcc.getAccountNumber() + " | " + batchAcc.getOwnerName());
+                        System.out.println("  Current balance: Rs. " + batchAcc.getBalance());
+                        TransactionProcessor batchProc = new TransactionProcessor();
+                        bankService.batchProcess(batchProc, batchAcc.getAccountNumber(), 5000, 2000);
+                        System.out.println("  Batch complete. Final balance: Rs. " + batchAcc.getBalance());
+                    }
+                }
+                case 9 -> {
+                    ArrayList<Account> toSave = bankService.listAccounts();
+                    StatePersister.save(toSave.toArray(new Account[0]), p14StateFile);
+                    System.out.println("  Saved " + toSave.size() + " account(s) to: " + p14StateFile.toAbsolutePath());
+                }
+                case 10 -> {
+                    System.out.print("  Search owner name: ");
+                    String name = sc.nextLine().trim();
+                    ArrayList<Account> results = bankService.searchByName(name);
+                    if (results.isEmpty()) {
+                        System.out.println("  No accounts found for: " + name);
+                    } else {
+                        System.out.println("  Found " + results.size() + " account(s):");
+                        for (Account a : results) {
+                            System.out.println("  " + a.getAccountNumber() + " | " + a.getOwnerName() + " | Rs. " + a.getBalance());
+                        }
+                    }
+                }
+                case 0 -> {
+                    ArrayList<Account> finalAccounts = bankService.listAccounts();
+                    StatePersister.save(finalAccounts.toArray(new Account[0]), p14StateFile);
+                    System.out.println("  Accounts saved. Goodbye!");
                     running = false;
                 }
-                default -> System.out.println("Invalid choice");
+                default -> System.out.println("  Invalid choice. Please select 0-10.");
             }
         }
 
