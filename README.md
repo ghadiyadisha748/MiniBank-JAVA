@@ -85,10 +85,3 @@ Expected: OK (4 tests)
     ReportGenerator  DirectoryStream walk, BufferedReader, readAttributes totals
     StatementFormatter  Readable account statement builder
     BankServiceTest  JUnit 4: deposit, withdrawal limit, concurrency, persistence
-
-## Rules
-
-- No package declarations.
-- No source-code subfolders.
-- No comments in any Java source file.
-- JUnit jars in lib/ are test-only, not in application JAR.
