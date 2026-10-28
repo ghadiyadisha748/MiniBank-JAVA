@@ -7,6 +7,7 @@ public class Customer implements Cloneable, Serializable {
     private String name;
     private String email;
     private String mobile;
+    @Id
     private final String customerid;
 
     private static long customercnt = 100;

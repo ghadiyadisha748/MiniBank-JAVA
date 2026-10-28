@@ -633,8 +633,74 @@ public class MiniBank {
             System.out.println("  " + key + " -> " + treeMap.get(key).getOwnerName() + " | Rs. " + treeMap.get(key).getBalance());
         }
 
+        System.out.println("\n>>> PRACTICAL 13: Generic Repository Using Generics and Reflection <<<");
+
+        System.out.println("\n[1] Repository<Account> — save() with reflection:");
+        Repository<Account> accountRepo = new Repository<>();
+        Account repoAcc1 = new SavingsAccount("Anika", 18000, 1000);
+        Account repoAcc2 = new CurrentAccount("Dev", 9000, 3000);
+        Account repoAcc3 = new FixedDepositAccount("Mihir", 40000);
+        accountRepo.save(repoAcc1);
+        accountRepo.save(repoAcc2);
+        System.out.println("  Saved: " + repoAcc1.getAccountNumber() + " | " + repoAcc1.getOwnerName());
+        System.out.println("  Saved: " + repoAcc2.getAccountNumber() + " | " + repoAcc2.getOwnerName());
+
+        System.out.println("\n[2] Repository<Account> — saveAll():");
+        accountRepo.saveAll(repoAcc3);
+        System.out.println("  SaveAll saved: " + repoAcc3.getAccountNumber() + " | " + repoAcc3.getOwnerName());
+
+        System.out.println("\n[3] Repository<Account> — findById():");
+        String lookupId = repoAcc1.getAccountNumber();
+        Account fetched = accountRepo.findById(lookupId);
+        System.out.println("  findById(" + lookupId + "): " + (fetched != null ? fetched.toString() : "null"));
+        System.out.println("  findById(AC9999): " + accountRepo.findById("AC9999"));
+
+        System.out.println("\n[4] Repository<Account> — findAll():");
+        ArrayList<Account> allAccounts = accountRepo.findAll();
+        System.out.println("  Total accounts in repo: " + allAccounts.size());
+        for (Account acc : allAccounts) {
+            System.out.println("  " + acc.getAccountNumber() + " | " + acc.getOwnerName() + " | Rs. " + acc.getBalance());
+        }
+
+        System.out.println("\n[5] Repository<Account> — delete():");
+        boolean deleted = accountRepo.delete(repoAcc2.getAccountNumber());
+        System.out.println("  delete(" + repoAcc2.getAccountNumber() + ") returned: " + deleted);
+        boolean deletedAgain = accountRepo.delete(repoAcc2.getAccountNumber());
+        System.out.println("  delete(" + repoAcc2.getAccountNumber() + ") again returned: " + deletedAgain);
+        System.out.println("  Remaining in repo: " + accountRepo.findAll().size());
+
+        System.out.println("\n[6] Repository<Customer> — same Repository class, different type:");
+        Repository<Customer> customerRepo = new Repository<>();
+        Customer cust1 = new Customer("Nisha", "nisha@bank.com", "9876543210");
+        Customer cust2 = new Customer("Raj", "raj@bank.com", "9123456780");
+        customerRepo.save(cust1);
+        customerRepo.save(cust2);
+        System.out.println("  Saved: " + cust1.getCustomerId() + " | " + cust1.getName());
+        System.out.println("  Saved: " + cust2.getCustomerId() + " | " + cust2.getName());
+        Customer foundCust = customerRepo.findById(cust1.getCustomerId());
+        System.out.println("  findById(" + cust1.getCustomerId() + "): " + (foundCust != null ? foundCust.toString() : "null"));
+        System.out.println("  Total customers in repo: " + customerRepo.findAll().size());
+
+        System.out.println("\n[7] Bounded generic average() <N extends Number>:");
+        Long[] balances = { 18000L, 9000L, 40000L };
+        double avg = Repository.average(balances);
+        System.out.println("  Balances: 18000, 9000, 40000");
+        System.out.printf("  Average : %.2f%n", avg);
+        Integer[] scores = { 85, 90, 78, 92, 88 };
+        System.out.println("  Scores : 85, 90, 78, 92, 88");
+        System.out.printf("  Average : %.2f%n", Repository.average(scores));
+
+        System.out.println("\n[8] Missing @Id field handled gracefully:");
+        try {
+            Repository<String> badRepo = new Repository<>();
+            badRepo.save("no-id-field");
+        } catch (IllegalArgumentException e) {
+            System.out.println("  Caught expected error: " + e.getMessage());
+        }
+
         bankinfo bank = new bankinfo("MiniBank", "Sarthana Branch");
         boolean running = true;
+
 
         while (running) {
             System.out.println("\n==============================");
