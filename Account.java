@@ -1,6 +1,6 @@
 import java.io.Serializable;
 
-public abstract class Account implements Transactable, Serializable {
+public abstract class Account implements Transactable, Serializable, Comparable<Account> {
 
     private static final long serialVersionUID = 1L;
 
@@ -56,6 +56,23 @@ public abstract class Account implements Transactable, Serializable {
     @Override
     public int hashCode() {
         return accountno != null ? accountno.hashCode() : 0;
+    }
+
+    @Override
+    public int compareTo(Account other) {
+        if (other == null) {
+            return 1;
+        }
+        if (this.accountno == null && other.accountno == null) {
+            return 0;
+        }
+        if (this.accountno == null) {
+            return -1;
+        }
+        if (other.accountno == null) {
+            return 1;
+        }
+        return this.accountno.compareTo(other.accountno);
     }
 
     private static String generateAccountNumber() {

@@ -1,6 +1,9 @@
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Scanner;
+import java.util.TreeMap;
 
 public class MiniBank {
 
@@ -554,6 +557,81 @@ public class MiniBank {
         String reportContent = ReportGenerator.generate(logsDir, reportFile);
         System.out.println(reportContent);
         System.out.println("  Report written to: " + reportFile.toAbsolutePath());
+
+        System.out.println("\n>>> PRACTICAL 12: Collections Framework <<<");
+
+        System.out.println("\n[1] Adding accounts to AccountStore (HashMap):");
+        AccountStore accountStore = new AccountStore();
+        Account storeAcc1 = new SavingsAccount("Priya", 12000, 1000);
+        Account storeAcc2 = new CurrentAccount("Rahul", 7500, 3000);
+        Account storeAcc3 = new FixedDepositAccount("Sneha", 25000);
+        Account storeAcc4 = new SavingsAccount("Karan", 7500, 500);
+        accountStore.add(storeAcc1);
+        accountStore.add(storeAcc2);
+        accountStore.add(storeAcc3);
+        accountStore.add(storeAcc4);
+        System.out.println("  Added 4 accounts.");
+
+        System.out.println("\n[2] Duplicate account number check:");
+        accountStore.add(storeAcc1);
+
+        System.out.println("\n[3] Retrieve account by account number:");
+        String lookupNo = storeAcc2.getAccountNumber();
+        Account found = accountStore.get(lookupNo);
+        if (found != null) {
+            System.out.println("  Found: " + found);
+        } else {
+            System.out.println("  Account " + lookupNo + " not found.");
+        }
+        System.out.println("  Lookup missing key: " + accountStore.get("AC9999"));
+
+        System.out.println("\n[4] All stored accounts (HashMap, unordered):");
+        for (Account acc : accountStore.getAll()) {
+            System.out.println("  " + acc);
+        }
+
+        System.out.println("\n[5] Sorted by balance (ascending), tie-break by account number:");
+        ArrayList<Account> byBalance = accountStore.sortedByBalance();
+        for (Account acc : byBalance) {
+            System.out.println("  Balance Rs. " + acc.getBalance() + " | " + acc.getAccountNumber() + " | " + acc.getOwnerName());
+        }
+
+        System.out.println("\n[6] Comparable<Account> — sorting by account number:");
+        ArrayList<Account> byNumber = new ArrayList<>(accountStore.getAll());
+        Collections.sort(byNumber);
+        for (Account acc : byNumber) {
+            System.out.println("  " + acc.getAccountNumber() + " | " + acc.getOwnerName());
+        }
+
+        System.out.println("\n[7] Transaction history (ArrayList<String>):");
+        accountStore.recordTransaction(storeAcc1.getAccountNumber() + " DEPOSIT 5000");
+        accountStore.recordTransaction(storeAcc1.getAccountNumber() + " WITHDRAW 1000");
+        accountStore.recordTransaction(storeAcc2.getAccountNumber() + " DEPOSIT 2000");
+        accountStore.recordTransaction(storeAcc3.getAccountNumber() + " DEPOSIT 3000");
+        for (String entry : accountStore.getHistory()) {
+            System.out.println("  " + entry);
+        }
+
+        System.out.println("\n[8] ConcurrentHashMap in TransactionProcessor — shared accounts:");
+        TransactionProcessor sharedProcessor = new TransactionProcessor();
+        sharedProcessor.registerAccount(storeAcc1);
+        sharedProcessor.registerAccount(storeAcc2);
+        System.out.println("  Registered: " + storeAcc1.getAccountNumber() + " and " + storeAcc2.getAccountNumber());
+        Account retrieved = sharedProcessor.getSharedAccount(storeAcc1.getAccountNumber());
+        System.out.println("  Retrieved from ConcurrentHashMap: " + (retrieved != null ? retrieved.toString() : "null"));
+        sharedProcessor.stop();
+
+        System.out.println("\n[9] Supplementary — accounts above threshold (Rs. 10000):");
+        ArrayList<Account> richAccounts = accountStore.aboveBalance(10000);
+        for (Account acc : richAccounts) {
+            System.out.println("  " + acc.getAccountNumber() + " | " + acc.getOwnerName() + " | Rs. " + acc.getBalance());
+        }
+
+        System.out.println("\n[10] Supplementary — TreeMap (sorted by account number):");
+        TreeMap<String, Account> treeMap = accountStore.toTreeMap();
+        for (String key : treeMap.keySet()) {
+            System.out.println("  " + key + " -> " + treeMap.get(key).getOwnerName() + " | Rs. " + treeMap.get(key).getBalance());
+        }
 
         bankinfo bank = new bankinfo("MiniBank", "Sarthana Branch");
         boolean running = true;
